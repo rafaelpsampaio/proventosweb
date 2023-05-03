@@ -1,0 +1,7 @@
+setup.py
+proventosweb.egg-info/PKG-INFO
+proventosweb.egg-info/SOURCES.txt
+proventosweb.egg-info/dependency_links.txt
+proventosweb.egg-info/not-zip-safe
+proventosweb.egg-info/requires.txt
+proventosweb.egg-info/top_level.txt
