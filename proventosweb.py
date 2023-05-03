@@ -13,13 +13,11 @@ def percent_str_to_float(percent_str):
     number = float(number_str) / 100.0
     return number
 
-
 def tratamento(prov, dob, boni, sub):
     dfp = None
     dfb = None
     dfbo = None
     dfs = None
-
     if prov is not None and not prov.empty:
         prov['Executado'] = prov['Pagamento']
         dfp = prov.loc[:, ['Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original']]
@@ -232,148 +230,6 @@ def subscricao(b):
     return df
 
 
-def consolidando(dffil, proventos):
-    dffil.loc[:, 'DATA'] = pd.to_datetime(dffil['DATA']).dt.date
-    proventos = proventos.loc[proventos['Data COM'] < pd.to_datetime(dt.datetime.today().date())]
-    proventos.loc[proventos['Tipo'] == 'JCP', 'Quantia'] *= 0.85
-    df3 = dffil.groupby(["CÓDIGO CLIENTE", "AÇÃO"]).agg({"QTD": "sum"}).reset_index()
-    # rename columns
-    df3 = df3.rename(columns={"CÓDIGO CLIENTE": "ID_Cliente", "AÇÃO": "Ativo"})
-    # create empty columns in cons dataframe
-    df3["Fin_Entrada"] = 0
-    df3["Data_Entrada"] = ""
-    df3["QTD_S"] = 0
-    df3["Fin_Saida"] = 0
-    df3["Data_Saida"] = ""
-    df3['Vendido'] = 0
-    for i, row in df3.iterrows():
-        # filter transactions for current client and action
-        df_client_action = dffil[(dffil["CÓDIGO CLIENTE"] == row["ID_Cliente"]) & (dffil["AÇÃO"] == row["Ativo"])]
-        total_shares = 0
-        total_share_finance = 0
-        total_sell_shares = 0
-        total_sell_finance = 0
-        investido = 0
-        vendido = 0
-        prov = 0
-        latest_sell_date = ""
-        last_transaction = ""
-        for j, trans in df_client_action.iterrows():
-            if last_transaction != "":
-                total_dividends = proventos.loc[
-                    (proventos['Data COM'] < trans["DATA"]) & (proventos['Data COM'] >= last_transaction) & (
-                                proventos['Ativo'] == trans['AÇÃO']), 'Quantia'].sum()
-                if total_shares * total_dividends > 0:
-                    prov += total_shares * total_dividends
-            if trans["C/V"] == "C":
-                if last_transaction == "":
-                    df3.loc[i, "Data_Entrada"] = trans["DATA"]
-                    # calculate average price based on first buy or 0 shares
-                if total_shares == 0:
-                    if trans["QTD"] > 0:
-                        avg_price = trans["FINANCEIRO Entrada"] / trans["QTD"]
-                    else:
-                        avg_price = 0
-                else:
-                    try:
-                        avg_price = (total_share_finance + trans["FINANCEIRO Entrada"]) / (trans["QTD"] + total_shares)
-                    except:
-                        avg_price = 0
-                # update total shares and total share finance
-                total_shares += trans["QTD"]
-                total_share_finance += trans["FINANCEIRO Entrada"]
-                investido += trans["FINANCEIRO Entrada"]
-            else:
-                # update total shares and total share finance for sells
-                total_sell_shares += abs(trans["QTD"])
-                total_sell_finance += abs(trans["FINANCEIRO Entrada"])
-                latest_sell_date = trans["DATA"]
-                total_shares -= abs(trans["QTD"])
-                if last_transaction != "":
-                    total_share_finance -= abs(trans["QTD"] * avg_price)
-                    vendido += abs(trans["QTD"] * avg_price)
-                else:
-                    total_share_finance -= abs(trans["FINANCEIRO Entrada"])
-            last_transaction = trans["DATA"]
-        if total_shares > 0:
-            prov += total_shares * proventos.loc[(proventos['Data COM'] >= last_transaction) & (
-                        proventos['Ativo'] == trans['AÇÃO']), 'Quantia'].sum()  # add columns to cons dataframe
-        try:
-            df3.loc[i, "PrecoMedio"] = round(total_share_finance / total_shares, 2)
-        except:
-            df3.loc[i, "PrecoMedio"] = 0
-        df3.loc[i, "QTD_S"] = total_sell_shares
-        df3.loc[i, "Dividendos"] = round(prov, 2)
-        df3.loc[i, "Fin_Entrada"] = round(investido, 2)
-        df3.loc[i, "Fin_Saida"] = round(total_sell_finance, 2)
-        df3.loc[i, "Data_Saida"] = latest_sell_date
-        df3.loc[i, 'Vendido'] = round(vendido, 2)
-    return df3
-
-
-def carteiras(dfilt):
-    dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Pagamento', 'Quantia', 'Beneficio'])
-    acoes = dfilt['AÇÃO'].unique().tolist()
-    for atv in acoes:
-        dfprov = eventos(atv, dfprov)
-    dfprov['Data COM'] = pd.to_datetime(dfprov['Data COM'], format='%d/%m/%Y').dt.date
-    proventos = dfprov[dfprov['Beneficio'] == 'Dinheiro']
-    carteiras = ['BDR', 'DIV', 'TOP10', 'FII']
-    df1 = pd.DataFrame()
-    for tipo in carteiras:
-        dfcart = dfilt[dfilt['Carteira'] == tipo]
-        if len(dfcart) > 0:
-            if df1.empty:
-                df1 = consolidando(dfcart, proventos)
-                df1['Carteira'] = tipo
-            else:
-                df2 = consolidando(dfcart, proventos)
-                df2['Carteira'] = tipo
-                df1 = pd.concat([df1, df2], ignore_index=True)
-    dfout = dfilt[~dfilt['Carteira'].isin(carteiras)]
-    dfoutc = consolidando(dfout, proventos)
-    if df1.empty:
-        dfinal = dfoutc
-    else:
-        dfoutc['Carteira'] = ['']
-        dfinal = pd.concat([df1, dfoutc], ignore_index=True)
-    return dfinal
-
-
-def insert(nomearq):
-    df = pd.read_excel(nomearq)
-    df = df.sort_values('DATA')
-
-    conditions = [
-        df['ESTRATEGIA'] == 'Carteira BDR',
-        df['ESTRATEGIA'].isin(['Carteira de Dividendos', 'Saída Carteira de Dividendos']),
-        df['ESTRATEGIA'] == 'Carteira TOP 10 XP',
-        df['ESTRATEGIA'].isin(['Carteira de FII', 'IPO FII']),
-        df['ESTRATEGIA'] == 'Carteira Benndorf SAÍDA',
-        df['ESTRATEGIA'] == 'STOCK PICKING'
-    ]
-
-    choices = ['BDR', 'DIV', 'TOP10', 'FII', 'BENNDORF', 'STOCKPICKING']
-    df['Carteira'] = np.select(conditions, choices, default=df['ESTRATEGIA'])
-    return df
-
-
-def filtragem(df, cod, atv, cart):
-    dfil = df.copy()
-    if len(dfil.loc[dfil['CÓDIGO CLIENTE'] == cod]) > 0:
-        dfil = dfil.loc[dfil['CÓDIGO CLIENTE'] == cod]
-    if len(dfil.loc[dfil['AÇÃO'] == atv]) > 0:
-        dfil = dfil.loc[dfil['AÇÃO'] == atv]
-    if len(dfil.loc[dfil['Carteira'] == cart]) > 0:
-        dfil = dfil.loc[dfil['Carteira'] == cart]
-    dfil = dfil.loc[:,
-           ['DATA', 'CÓDIGO CLIENTE', 'NOME', 'TIPO', 'AÇÃO', 'QTD', 'C/V', 'FINANCEIRO Entrada', 'Assessor',
-            'Carteira']]
-    dfil.to_excel('base.xlsx', index=False)
-    return dfil
-
-
-
 def prov(dfilt):
     dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
     acoes = dfilt['AÇÃO'].unique().tolist()
@@ -399,27 +255,3 @@ def prov(dfilt):
     print(f'Average time per atv: {(total_time/len(acoes)):.2f} seconds')
     print(f'Longest running atv: {longest_atv} ({longest_time:.2f} seconds)')
     return dfprov
-
-
-def montandocarteira(dfilt, proventos):
-    carteiras = ['BDR', 'DIV', 'TOP10', 'FII', 'BENNDORF', 'STOCKPICKING']
-    df1 = pd.DataFrame()
-    df2 = pd.DataFrame()
-    for tipo in carteiras:
-        dfcart = dfilt[dfilt['Carteira'] == tipo]
-        if len(dfcart) > 0:
-            if df1.empty:
-                df1 = consolidando(dfcart, proventos)
-                df1['Carteira'] = tipo
-            else:
-                df2 = consolidando(dfcart, proventos)
-                df2['Carteira'] = tipo
-                df1 = pd.concat([df1, df2], ignore_index=True)
-    dfout = dfilt[~dfilt['Carteira'].isin(carteiras)]
-    dfoutc = consolidando(dfout, proventos)
-    if df1.empty:
-        dfinal = dfoutc
-    else:
-        dfoutc['Carteira'] = 'Fora'
-        dfinal = pd.concat([df1, dfoutc], ignore_index=True)
-    return dfinal
