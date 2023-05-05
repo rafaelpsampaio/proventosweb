@@ -229,29 +229,47 @@ def subscricao(b):
     })
     return df
 
-
-def prov(dfilt):
-    dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
-    acoes = dfilt['AÇÃO'].unique().tolist()
-    cortes =[0.25,0.5,0.75]
-    print('Buscando proventos de '+len(acoes)+' ações!')
-    start_time = time.time()
-    longest_atv = None
-    longest_time = 0
-    for i, atv in enumerate(acoes):
-        if i/len(acoes)>cortes[j]:
-            print('Já foi '+str(cortes[j]*100)+"% das ações!")
-        print(f'Processing {atv} ({i+1}/{len(acoes)})...')
-        atv_start_time = time.time()
-        dfnovo = eventos(atv)
-        atv_time = time.time() - atv_start_time
-        if atv_time > longest_time:
-            longest_atv = atv
-            longest_time = atv_time
-        if dfnovo is not None:
-            dfprov = pd.concat([dfprov,dfnovo])
-    total_time = time.time() - start_time
-    print(f'Total time: {total_time:.2f} seconds')
-    print(f'Average time per atv: {(total_time/len(acoes)):.2f} seconds')
-    print(f'Longest running atv: {longest_atv} ({longest_time:.2f} seconds)')
+def provlista(acoeslista, testtime=0):
+    if testtime ==1:
+        import time
+        dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
+        acoes = acoeslista.unique().tolist()
+        cortes =[0.25,0.5,0.75,1]
+        print('Buscando proventos de '+str(len(acoes))+' ações!')
+        start_time = time.time()
+        longest_atv = None
+        longest_time = 0
+        j = 0
+        for i, atv in enumerate(acoes):
+            if i/len(acoes)>cortes[j]:
+                print('Já foi '+str(cortes[j]*100)+"% das ações!")
+                j = j+1
+            print(f'Processing {atv} ({i+1}/{len(acoes)})...')
+            atv_start_time = time.time()
+            dfnovo = eventos(atv)
+            atv_time = time.time() - atv_start_time
+            if atv_time > longest_time:
+                longest_atv = atv
+                longest_time = atv_time
+            if dfnovo is not None:
+                dfprov = pd.concat([dfprov,dfnovo])
+        print('Acabou!')
+        total_time = time.time() - start_time
+        print(f'Tempo total: {total_time:.2f} segundos')
+        print(f'Média por ativo: {(total_time/len(acoes)):.2f} segundos')
+        print(f'Tempo máximo: {longest_atv} ({longest_time:.2f} segundos)')
+    else:
+        dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
+        acoes = acoeslista.unique().tolist()
+        cortes =[0.25,0.5,0.75]
+        print('Buscando proventos de '+str(len(acoes))+' ações!')
+        j = 0
+        for i in range(len(acoes)):
+            if i/len(acoes)>cortes[j]:
+                print('Já foi '+str(cortes[j]*100)+"% das ações!")
+            atv = acoes[i]
+            dfnovo = eventos(atv)
+            if dfnovo is not None:
+                dfprov = pd.concat([dfprov,dfnovo])
+        print('Acabou!')
     return dfprov
