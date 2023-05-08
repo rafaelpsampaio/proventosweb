@@ -1,6 +1,5 @@
 pandas
 datetime
-json
 requests
 bs4
 numpy

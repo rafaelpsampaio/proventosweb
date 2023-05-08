@@ -229,12 +229,11 @@ def subscricao(b):
     })
     return df
 
-def provlista(acoeslista, testtime=0):
-    if testtime ==1:
+def provlista(acoes, testtime=0):
+    if testtime == 1:
         import time
         dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
-        acoes = acoeslista.unique().tolist()
-        cortes =[0.25,0.5,0.75,1]
+        cortes = [0.25,0.5,0.75,1]
         print('Buscando proventos de '+str(len(acoes))+' ações!')
         start_time = time.time()
         longest_atv = None
@@ -260,7 +259,6 @@ def provlista(acoeslista, testtime=0):
         print(f'Tempo máximo: {longest_atv} ({longest_time:.2f} segundos)')
     else:
         dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
-        acoes = acoeslista.unique().tolist()
         cortes =[0.25,0.5,0.75]
         print('Buscando proventos de '+str(len(acoes))+' ações!')
         j = 0
