@@ -31,8 +31,9 @@ def tratamento(prov, dob, boni, sub):
 
     if boni is not None and not boni.empty:
         boni['Executado'] = boni['Data de incorporação']
-        boni['Valor'] = boni['Valor base']
-        dfbo = boni.loc[:, ['Data COM', 'Executado', 'Valor']]
+        boni['Proporção'] = boni['Proporção'].apply(lambda x: float(x.replace(',', '.'))) / 100
+        boni['Valor'] = boni['Valor base'].apply(lambda x: float(x.replace(',', '.')))
+        dfbo = boni.loc[:, ['Data COM', 'Executado', 'Valor', 'Proporção']]
         dfbo['Tipo'] = 'Bonificação'
 
     if sub is not None and not sub.empty:
@@ -66,6 +67,8 @@ def tratamento(prov, dob, boni, sub):
             dfcons['Quantia'] = dfcons['Quantia'].replace({np.nan: None})
         if prov is not None and not prov.empty:
             dfcons['Valor Original'] = dfcons['Valor Original'].replace({pd.NA: None})
+        if boni is not None and not prov.empty:
+            dfcons['Proporção'] = dfcons['Proporção'].replace({pd.NA: None})
         dfcons.sort_values(by=['Tipo', 'Data COM'])
     return dfcons
 
@@ -252,6 +255,12 @@ def provlista(acoes, testtime=0):
                 longest_time = atv_time
             if dfnovo is not None:
                 dfprov = pd.concat([dfprov,dfnovo])
+        if 'Valor Original' in dfprov.columns:
+            dfprov['Valor Original'] = dfprov['Valor Original'].replace({pd.NA: None})
+        if 'Quantia' in dfprov.columns:
+            dfprov['Quantia'] = dfprov['Quantia'].replace({np.nan: None})
+        if 'Proporção' in dfprov.columns:
+            dfprov['Proporção'] = dfprov['Proporção'].replace({pd.NA: None})
         print('Acabou!')
         total_time = time.time() - start_time
         print(f'Tempo total: {total_time:.2f} segundos')
@@ -269,5 +278,11 @@ def provlista(acoes, testtime=0):
             dfnovo = eventos(atv)
             if dfnovo is not None:
                 dfprov = pd.concat([dfprov,dfnovo])
+        if 'Valor Original' in dfprov.columns:
+            dfprov['Valor Original'] = dfprov['Valor Original'].replace({pd.NA: None})
+        if 'Quantia' in dfprov.columns:
+            dfprov['Quantia'] = dfprov['Quantia'].replace({np.nan: None})
+        if 'Proporção' in dfprov.columns:
+            dfprov['Proporção'] = dfprov['Proporção'].replace({pd.NA: None})
         print('Acabou!')
     return dfprov

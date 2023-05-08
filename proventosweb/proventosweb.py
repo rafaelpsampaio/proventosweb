@@ -55,7 +55,7 @@ def tratamento(prov, dob, boni, sub):
                 sub.loc[i, 'Executado'] = None
         dfs = sub.loc[:, ['Data COM', 'Executado', 'Valor', 'Quantia']]
         dfs['Tipo'] = 'Subscrição'
-    dfcons = pd.DataFrame(columns=['Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
+    dfcons = pd.DataFrame(columns=['Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia', 'Proporção'])
     if dfp is None and dfb is None and dfbo is None and dfs is None:
         dfcons = None
     else:
@@ -246,7 +246,7 @@ def provlista(acoes, testtime=0):
             if i/len(acoes)>cortes[j]:
                 print('Já foi '+str(cortes[j]*100)+"% das ações!")
                 j = j+1
-            print(f'Processing {atv} ({i+1}/{len(acoes)})...')
+            print(f'Processando {atv} ({i+1}/{len(acoes)})...')
             atv_start_time = time.time()
             dfnovo = eventos(atv)
             atv_time = time.time() - atv_start_time
