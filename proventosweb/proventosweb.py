@@ -65,10 +65,13 @@ def tratamento(prov, dob, boni, sub):
         dfcons['Executado'] = pd.to_datetime(dfcons['Executado'], dayfirst=True).dt.date
         if sub is not None and not sub.empty:
             dfcons['Quantia'] = dfcons['Quantia'].replace({np.nan: None})
+            dfcons['Quantia'] = dfcons['Quantia'].replace({pd.NA: None})
         if prov is not None and not prov.empty:
             dfcons['Valor Original'] = dfcons['Valor Original'].replace({pd.NA: None})
+            dfcons['Valor Original'] = dfcons['Valor Original'].replace({np.nan: None})
         if boni is not None and not prov.empty:
             dfcons['Proporção'] = dfcons['Proporção'].replace({pd.NA: None})
+            dfcons['Proporção'] = dfcons['Proporção'].replace({np.nan: None})
         dfcons.sort_values(by=['Tipo', 'Data COM'])
     return dfcons
 
