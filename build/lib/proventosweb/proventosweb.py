@@ -4,7 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 import numpy as np
 import time
-
+import random
 
 def percent_str_to_float(percent_str):
     decimal_str = percent_str.replace(',', '.')
@@ -51,10 +51,13 @@ def tratamento(prov, dob, boni, sub):
         dfcons['Executado'] = pd.to_datetime(dfcons['Executado'], dayfirst=True).dt.date
         if sub is not None and not sub.empty:
             dfcons['Quantia'] = dfcons['Quantia'].replace({np.nan: None})
+            dfcons['Quantia'] = dfcons['Quantia'].replace({pd.NA: None})
         if prov is not None and not prov.empty:
             dfcons['Valor Original'] = dfcons['Valor Original'].replace({pd.NA: None})
+            dfcons['Valor Original'] = dfcons['Valor Original'].replace({np.nan: None})
         if boni is not None and not prov.empty:
             dfcons['Proporção'] = dfcons['Proporção'].replace({pd.NA: None})
+            dfcons['Proporção'] = dfcons['Proporção'].replace({np.nan: None})
         dfcons.sort_values(by=['Tipo', 'Data COM'])
     return dfcons
 
@@ -150,8 +153,19 @@ def subscricao(texto):
 
 def provlista(acoes, testtime=0):
     session = requests.Session()
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+    headers_ar = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.57 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.57 Safari/537.36'
+    ]
+    headers = random.choice(headers_ar)
     dfprov = pd.DataFrame(columns=['Ativo', 'Tipo', 'Data COM', 'Executado', 'Valor', 'Valor Original', 'Quantia'])
     cortes = [0.25, 0.5, 0.75, 1]
     if testtime == 1:
@@ -223,7 +237,8 @@ def procurandotipo(acao, tempo, session, headers, tipos):
     for tipo in tipos:
         try:
             url = 'https://statusinvest.com.br/' + tipo + '/' + acao
-            resposta = session.get(url, headers=headers, timeout=tempo)
+            resposta = session.get(url, headers={'User-Agent': headers}, timeout=tempo)
+
             if resposta.status_code == 200:
                 amostra = resposta.text
                 soup1 = BeautifulSoup(amostra, 'html.parser')
@@ -240,11 +255,11 @@ def eventos(acao, session=0, headers=0):
     acao = acao.upper()
     tempos = [x / 10 for x in range(3, 10)]
     if acao[-2:] == '34':
-        tipos = ['bdrs', 'acoes', 'fundos-imobiliarios', 'fiinfras', 'fiagros', 'etfs']
+        tipos = ['bdrs', 'acoes', 'fundos-imobiliarios', 'fiinfras', 'fiagros','fips', 'etfs']
     elif acao[-2:] == '11':
-        tipos = ['fundos-imobiliarios', 'acoes', 'fiinfras', 'fiagros', 'etfs', 'bdrs']
+        tipos = ['fundos-imobiliarios', 'acoes', 'fiinfras', 'fiagros','fips', 'etfs', 'bdrs']
     else:
-        tipos = ['acoes', 'fundos-imobiliarios', 'fiinfras', 'fiagros', 'etfs', 'bdrs']
+        tipos = ['acoes', 'fundos-imobiliarios', 'fiinfras', 'fiagros', 'etfs','fips', 'bdrs']
     if session == 0:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
@@ -255,8 +270,8 @@ def eventos(acao, session=0, headers=0):
             break
     dfin = None
     if soup is None:
-        print("Tipo não encontrado")
-    else:
+        print("Ação não encontrada: "+acao)
+    elif tipo2 != 'etfs':
         value = soup.find('input', {'id': 'results'}).get('value')
         if value == '[]':
             print(acao + ' sem dividendos')

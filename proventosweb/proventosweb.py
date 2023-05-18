@@ -48,7 +48,7 @@ def tratamento(prov, dob, boni, sub):
         dfcons = pd.concat([dfp, dfb, dfbo, dfs], ignore_index=True)
         dfcons['Data COM'] = pd.to_datetime(dfcons['Data COM'], dayfirst=True).dt.date
         dfcons['Executado'] = dfcons['Executado'].replace('-', None)
-        dfcons['Executado'] = pd.to_datetime(dfcons['Executado'], dayfirst=True).dt.date
+        dfcons['Executado'] = pd.to_datetime(dfcons['Executado'], dayfirst=True, errors='coerce').dt.date
         if sub is not None and not sub.empty:
             dfcons['Quantia'] = dfcons['Quantia'].replace({np.nan: None})
             dfcons['Quantia'] = dfcons['Quantia'].replace({pd.NA: None})
@@ -253,7 +253,7 @@ def procurandotipo(acao, tempo, session, headers, tipos):
 
 def eventos(acao, session=0, headers=0):
     acao = acao.upper()
-    tempos = [x / 10 for x in range(3, 10)]
+    tempos = [x / 10 for x in range(3, 20)]
     if acao[-2:] == '34':
         tipos = ['bdrs', 'acoes', 'fundos-imobiliarios', 'fiinfras', 'fiagros','fips', 'etfs']
     elif acao[-2:] == '11':
