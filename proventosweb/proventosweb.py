@@ -270,8 +270,8 @@ def eventos(acao, session=0, headers=0):
             break
     dfin = None
     if soup is None:
-        print("Tipo não encontrado")
-    else:
+        print("Ação não encontrada: "+acao)
+    elif tipo2 != 'etfs':
         value = soup.find('input', {'id': 'results'}).get('value')
         if value == '[]':
             print(acao + ' sem dividendos')
