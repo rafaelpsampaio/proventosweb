@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='proventosweb',
-      version='0.7',
+      version='0.70',
       description='Uma biblioteca para buscar proventos de ações na plataforma Status Invest',
       url='https://github.com/rafaelpsampaio/proventosweb',
       author='Rafael Sampaio',
