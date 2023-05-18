@@ -237,7 +237,8 @@ def procurandotipo(acao, tempo, session, headers, tipos):
     for tipo in tipos:
         try:
             url = 'https://statusinvest.com.br/' + tipo + '/' + acao
-            resposta = session.get(url, headers=headers, timeout=tempo)
+            resposta = session.get(url, headers={'User-Agent': headers}, timeout=tempo)
+
             if resposta.status_code == 200:
                 amostra = resposta.text
                 soup1 = BeautifulSoup(amostra, 'html.parser')
